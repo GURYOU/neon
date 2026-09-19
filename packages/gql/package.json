@@ -13,7 +13,7 @@
     "neon": "bin/neon.js"
   },
   "peerDependencies": {
-    "@the-neon/core": "*",
+    "@the-neon/core": "^0.2.6",
     "aws-amplify": "^6.0.0"
   },
   "dependencies": {
@@ -46,5 +46,8 @@
     "typescript"
   ],
   "author": "Stojce Slavkovski",
-  "description": "GraphQL support (GQL Generator) for Neon"
+  "description": "GraphQL support (GQL Generator) for Neon",
+  "devDependencies": {
+    "@the-neon/core": "workspace:*"
+  }
 }
