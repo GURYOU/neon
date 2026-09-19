@@ -8,6 +8,48 @@ jest.mock("fs", () => ({
 
 const mockFs = jest.requireMock("fs");
 
+const writtenFile = (pattern: RegExp): string => {
+  const call = mockFs.writeFileSync.mock.calls.find(([target]: [string]) =>
+    pattern.test(target),
+  );
+  if (!call) {
+    throw new Error(`no file written matching ${pattern}`);
+  }
+  return call[1];
+};
+
+// Evaluates the emitted gqlClient source in isolation: the two ESM imports are
+// swapped for injected stubs so the generated module can run under Jest/CJS.
+const loadGeneratedClient = (
+  source: string,
+  { amplifyEndpoint, idToken }: { amplifyEndpoint?: string; idToken?: string },
+) => {
+  const body = source
+    .split("\n")
+    .filter((line) => !line.startsWith("import "))
+    .join("\n")
+    .replace(/export const /g, "const ");
+
+  const fetchMock = jest.fn().mockResolvedValue({
+    json: async () => ({ data: { noop: null } }),
+  });
+  const Amplify = {
+    getConfig: () => ({ API: { GraphQL: { endpoint: amplifyEndpoint } } }),
+  };
+  const fetchAuthSession = async () => ({
+    tokens: idToken ? { idToken: { toString: () => idToken } } : undefined,
+  });
+
+  const factory = new Function(
+    "Amplify",
+    "fetchAuthSession",
+    "fetch",
+    `${body}\nreturn { apiCall, configureClient };`,
+  );
+
+  return { ...factory(Amplify, fetchAuthSession, fetchMock), fetchMock };
+};
+
 describe("GraphQlApiClientGenerator", () => {
   describe("createReqFields", () => {
     it("returns empty string when responseType is JSON", () => {
@@ -215,6 +257,163 @@ describe("GraphQlApiClientGenerator", () => {
       );
 
       expect(mockFs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    it("writes an index.js re-exporting every generated module", () => {
+      const queries = [
+        {
+          instance: "UserApi",
+          methodName: "listUsers",
+          params: [],
+          responseType: "JSON",
+        },
+        {
+          instance: "OrderApi",
+          methodName: "listOrders",
+          params: [],
+          responseType: "JSON",
+        },
+      ];
+
+      GraphQlApiClientGenerator.generateFiles(
+        queries,
+        [],
+        new Map(),
+        "/output",
+        "/client",
+      );
+
+      expect(writtenFile(/index\.js$/)).toBe(
+        [
+          "export * from './OrderApi';",
+          "export * from './UserApi';",
+          "export * from './gqlClient';",
+          "",
+        ].join("\n"),
+      );
+    });
+
+    it("sorts the index.js exports so regeneration is deterministic", () => {
+      const queries = ["Zeta", "Alpha", "Mid"].map((instance) => ({
+        instance: `${instance}Api`,
+        methodName: "list",
+        params: [],
+        responseType: "JSON",
+      }));
+
+      GraphQlApiClientGenerator.generateFiles(
+        queries,
+        [],
+        new Map(),
+        "/output",
+        "/client",
+      );
+
+      const lines = writtenFile(/index\.js$/)
+        .trim()
+        .split("\n");
+      expect(lines).toEqual([...lines].sort());
+    });
+  });
+
+  describe("generated client endpoint resolution", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    const generateClient = () => {
+      GraphQlApiClientGenerator.generateFiles(
+        [],
+        [],
+        new Map(),
+        "/output",
+        "/client",
+      );
+      return writtenFile(/gqlClient\.js$/);
+    };
+
+    it("issues an unchanged request when configureClient is never called", async () => {
+      const { apiCall, fetchMock } = loadGeneratedClient(generateClient(), {
+        amplifyEndpoint: "https://amplify.example/graphql",
+        idToken: "id-token",
+      });
+
+      await apiCall({
+        query: "query { noop }",
+        variables: { id: 1 },
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://amplify.example/graphql",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "id-token",
+          },
+          body: JSON.stringify({
+            query: "query { noop }",
+            variables: { id: 1 },
+          }),
+        },
+      );
+    });
+
+    it("uses the injected endpoint once configureClient has been called", async () => {
+      const { apiCall, configureClient, fetchMock } = loadGeneratedClient(
+        generateClient(),
+        { amplifyEndpoint: "https://amplify.example/graphql" },
+      );
+
+      configureClient({ endpoint: "https://training.example/graphql" });
+      await apiCall({ query: "query { noop }" });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://training.example/graphql",
+        expect.any(Object),
+      );
+    });
+
+    it("resolves the endpoint per call, so configuring after import applies", async () => {
+      const { apiCall, configureClient, fetchMock } = loadGeneratedClient(
+        generateClient(),
+        { amplifyEndpoint: "https://amplify.example/graphql" },
+      );
+
+      await apiCall({ query: "query { noop }" });
+      configureClient({ endpoint: "https://training.example/graphql" });
+      await apiCall({ query: "query { noop }" });
+
+      expect(fetchMock.mock.calls[0][0]).toBe(
+        "https://amplify.example/graphql",
+      );
+      expect(fetchMock.mock.calls[1][0]).toBe(
+        "https://training.example/graphql",
+      );
+    });
+
+    it("keeps configuration separate per generated client module", async () => {
+      const source = generateClient();
+      const proxy = loadGeneratedClient(source, {
+        amplifyEndpoint: "https://amplify.example/graphql",
+      });
+      const training = loadGeneratedClient(source, {
+        amplifyEndpoint: "https://amplify.example/graphql",
+      });
+
+      training.configureClient({
+        endpoint: "https://training.example/graphql",
+      });
+      await proxy.apiCall({ query: "query { noop }" });
+      await training.apiCall({ query: "query { noop }" });
+
+      expect(proxy.fetchMock.mock.calls[0][0]).toBe(
+        "https://amplify.example/graphql",
+      );
+      expect(training.fetchMock.mock.calls[0][0]).toBe(
+        "https://training.example/graphql",
+      );
     });
   });
 });
