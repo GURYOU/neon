@@ -20,6 +20,21 @@ export const ErrorPrefix = {
     .join("\n")}
 };
 
+let clientConfig = {};
+
+export const configureClient = (config) => {
+  clientConfig = { ...clientConfig, ...config };
+};
+
+const resolveEndpoint = () => {
+  if (clientConfig.endpoint) {
+    return clientConfig.endpoint;
+  }
+
+  const config = Amplify.getConfig();
+  return config.API?.GraphQL?.endpoint;
+};
+
 export const apiCall = async ({ query, variables, fragments }) => {
   let fragmentStr = '';
   if (fragments) {
@@ -30,8 +45,7 @@ export const apiCall = async ({ query, variables, fragments }) => {
   }
 
   try {
-    const config = Amplify.getConfig();
-    const endpoint = config.API?.GraphQL?.endpoint;
+    const endpoint = resolveEndpoint();
 
     const session = await fetchAuthSession();
     const idToken = session.tokens?.idToken?.toString();
@@ -220,6 +234,13 @@ export const apiCall = async ({ query, variables, fragments }) => {
         const apiPath = path.resolve(apipath, `${k}.js`);
         writeFileSync(apiPath, val);
       });
+
+      const modules = [...clientApis.keys(), "gqlClient"].sort();
+      const indexPath = path.resolve(apipath, `index.js`);
+      writeFileSync(
+        indexPath,
+        modules.map((name) => `export * from './${name}';`).join("\n") + "\n",
+      );
     }
   }
 }
