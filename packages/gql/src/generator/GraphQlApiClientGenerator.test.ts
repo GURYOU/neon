@@ -1,3 +1,4 @@
+import { ErrorPrefix } from "@the-neon/core";
 import GraphQlApiClientGenerator from "./GraphQlApiClientGenerator";
 
 jest.mock("fs", () => ({
@@ -313,6 +314,61 @@ describe("GraphQlApiClientGenerator", () => {
         .trim()
         .split("\n");
       expect(lines).toEqual([...lines].sort());
+    });
+  });
+
+  // The generator inlines its own resolved copy of the ErrorPrefix enum into
+  // every client it emits, so a stale @the-neon/core silently drops constants
+  // from the generated file. The expectation is derived from the imported enum
+  // rather than a fixed list, so it keeps holding when a key is added upstream.
+  describe("emitted ErrorPrefix", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    const emittedClient = () => {
+      GraphQlApiClientGenerator.generateFiles(
+        [],
+        [],
+        new Map(),
+        "/output",
+        "/client",
+      );
+      return writtenFile(/gqlClient\.js$/);
+    };
+
+    it.each(Object.entries(ErrorPrefix))(
+      "inlines %s with its value",
+      (key, value) => {
+        expect(emittedClient()).toContain(`${key}: '${value}',`);
+      },
+    );
+
+    // The two assertions above derive both sides from the same import, so they
+    // hold even when that import is a stale @the-neon/core. This one anchors the
+    // resolution itself: the generator must inline THIS repo's core, not
+    // whatever the registry happens to supply.
+    it("resolves the workspace copy of @the-neon/core", () => {
+      const resolved = require("@the-neon/core/package.json").version;
+      const workspace = require("../../../core/package.json").version;
+
+      expect(resolved).toBe(workspace);
+    });
+
+    it("inlines every key of the enum and no others", () => {
+      const block = emittedClient().match(
+        /export const ErrorPrefix = \{\n([\s\S]*?)\n\};/,
+      );
+      if (!block) {
+        throw new Error("no ErrorPrefix block in the emitted client");
+      }
+
+      const emitted = block[1]
+        .split("\n")
+        .map((line) => line.trim().split(":")[0])
+        .filter(Boolean);
+
+      expect(emitted.sort()).toEqual(Object.keys(ErrorPrefix).sort());
     });
   });
 
