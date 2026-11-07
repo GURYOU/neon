@@ -1,14 +1,14 @@
-# @the-neon/gql
+# @guryou/neon-gql
 
 GraphQL support for Neon — includes a CLI generator and server utilities.
 
 ## Install
 
 ```bash
-npm install @the-neon/gql
+npm install @guryou/neon-gql
 ```
 
-Requires `@the-neon/core` and `aws-amplify` as peer dependencies.
+Requires `@the-neon/core` (alias it to `@guryou/neon-core`, see the root README) and `aws-amplify` as peer dependencies.
 
 ## CLI
 

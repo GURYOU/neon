@@ -1,19 +1,46 @@
 {
-  "name": "@the-neon/gql",
-  "version": "0.5.4",
+  "name": "@guryou/neon-gql",
+  "version": "0.5.5",
+  "description": "GraphQL support (GQL Generator) for Neon",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/the-neon/neon.git",
-    "directory": "packages/gql"
-  },
+  "files": [
+    "lib",
+    "bin"
+  ],
   "bin": {
     "neon": "bin/neon.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Stojce Slavkovski",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GURYOU/neon.git",
+    "directory": "packages/gql"
+  },
+  "bugs": {
+    "url": "https://github.com/GURYOU/neon/issues"
+  },
+  "homepage": "https://github.com/GURYOU/neon/tree/main/packages/gql#readme",
+  "keywords": [
+    "neon",
+    "graphql",
+    "generator",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build",
+    "test": "jest --coverage"
+  },
+  "directories": {
+    "lib": "lib"
+  },
   "peerDependencies": {
-    "@the-neon/core": "^0.2.6",
+    "@the-neon/core": "*",
     "aws-amplify": "^6.0.0"
   },
   "dependencies": {
@@ -27,27 +54,7 @@
     "graphql-type-long": "^0.1.1",
     "json5": "^2.2.1"
   },
-  "bugs": {
-    "url": "https://github.com/the-neon/neon/issues"
-  },
-  "homepage": "https://github.com/the-neon/neon#readme",
-  "directories": {
-    "lib": "lib"
-  },
-  "scripts": {
-    "build": "tsc -p .",
-    "prepublishOnly": "npm run build",
-    "test": "jest --coverage"
-  },
-  "keywords": [
-    "neon",
-    "graphql",
-    "generator",
-    "typescript"
-  ],
-  "author": "Stojce Slavkovski",
-  "description": "GraphQL support (GQL Generator) for Neon",
   "devDependencies": {
-    "@the-neon/core": "workspace:*"
+    "@the-neon/core": "workspace:@guryou/neon-core@*"
   }
 }

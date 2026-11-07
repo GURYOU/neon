@@ -108,7 +108,7 @@ importers:
         version: 2.2.3
     devDependencies:
       '@the-neon/core':
-        specifier: workspace:*
+        specifier: workspace:@guryou/neon-core@*
         version: link:../core
 
   packages/mysql:
@@ -139,15 +139,16 @@ importers:
 
   packages/validation:
     dependencies:
-      '@the-neon/core':
-        specifier: '*'
-        version: 0.0.6
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.2
       uuid:
         specifier: ^8.3.1
         version: 8.3.2
+    devDependencies:
+      '@the-neon/core':
+        specifier: workspace:@guryou/neon-core@*
+        version: link:../core
 
 packages:
 

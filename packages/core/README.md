@@ -1,11 +1,11 @@
-# @the-neon/core
+# @guryou/neon-core
 
 Core decorators, errors, and interfaces for Neon.
 
 ## Install
 
 ```bash
-npm install @the-neon/core
+npm install @guryou/neon-core
 ```
 
 ## Usage
