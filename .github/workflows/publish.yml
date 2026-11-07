@@ -1,0 +1,44 @@
+name: Publish
+
+# Publishes @guryou/neon-core, -gql, -pg and -validation to public npm.
+# Runs on a v* tag push, or by hand from the Actions tab. Needs the repo
+# secret NPM_TOKEN (an npmjs automation token).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.29.2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Build and test
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm run test
+
+      - name: Publish
+        run: >
+          pnpm publish -r --no-git-checks
+          --filter @guryou/neon-core
+          --filter @guryou/neon-gql
+          --filter @guryou/neon-pg
+          --filter @guryou/neon-validation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

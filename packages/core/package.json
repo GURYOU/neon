@@ -1,25 +1,26 @@
 {
-  "name": "@the-neon/core",
-  "version": "0.2.6",
+  "name": "@guryou/neon-core",
+  "version": "0.2.7",
+  "description": "Core utilities for Neon — decorators, errors, and interfaces",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
+  "author": "Stojce Slavkovski",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/the-neon/neon.git",
+    "url": "git+https://github.com/GURYOU/neon.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/the-neon/neon/issues"
+    "url": "https://github.com/GURYOU/neon/issues"
   },
-  "homepage": "https://github.com/the-neon/neon#readme",
-  "directories": {
-    "lib": "lib"
-  },
-  "scripts": {
-    "build": "tsc -p .",
-    "prepublishOnly": "npm run build"
-  },
+  "homepage": "https://github.com/GURYOU/neon/tree/main/packages/core#readme",
   "keywords": [
     "neon",
     "decorators",
@@ -27,6 +28,11 @@
     "interfaces",
     "typescript"
   ],
-  "author": "Stojce Slavkovski",
-  "description": "Core utilities for Neon — decorators, errors, and interfaces"
+  "scripts": {
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build"
+  },
+  "directories": {
+    "lib": "lib"
+  }
 }

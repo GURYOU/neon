@@ -112,3 +112,5 @@ packages/**/lib
 .local
 .*code
 docs
+# Claude Code
+.claude/

@@ -222,8 +222,11 @@ export const apiCall = async ({ query, variables, fragments }) => {
         mkdirSync(apipath);
       }
 
+      // gqlClient.js is emitted once; a consumer may hand-maintain it afterwards.
       const gqlClientPath = path.resolve(apipath, `gqlClient.js`);
-      writeFileSync(gqlClientPath, GraphQlApiClientGenerator.GQL_CLIENT);
+      if (!existsSync(gqlClientPath)) {
+        writeFileSync(gqlClientPath, GraphQlApiClientGenerator.GQL_CLIENT);
+      }
 
       const clientApis = GraphQlApiClientGenerator.createClientApis(
         queries,

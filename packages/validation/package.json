@@ -1,23 +1,37 @@
 {
-  "name": "@the-neon/validation",
-  "version": "0.0.14",
+  "name": "@guryou/neon-validation",
+  "version": "0.0.15",
+  "description": "Validation support for Neon using decorators",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
+  "author": "Stojce Slavkovski",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/the-neon/neon.git",
+    "url": "git+https://github.com/GURYOU/neon.git",
     "directory": "packages/validation"
   },
   "bugs": {
-    "url": "https://github.com/the-neon/neon/issues"
+    "url": "https://github.com/GURYOU/neon/issues"
   },
+  "homepage": "https://github.com/GURYOU/neon/tree/main/packages/validation#readme",
+  "keywords": [
+    "neon",
+    "validation",
+    "decorators",
+    "typescript"
+  ],
   "scripts": {
     "build": "tsc -p .",
     "prepublishOnly": "npm run build",
     "test": "jest --coverage"
   },
-  "homepage": "https://github.com/the-neon/neon#readme",
   "directories": {
     "lib": "lib"
   },
@@ -28,12 +42,7 @@
     "uuid": "^8.3.1",
     "@types/node": "^24.10.1"
   },
-  "keywords": [
-    "neon",
-    "validation",
-    "decorators",
-    "typescript"
-  ],
-  "author": "Stojce Slavkovski",
-  "description": "Validation support for Neon using decorators"
+  "devDependencies": {
+    "@the-neon/core": "workspace:@guryou/neon-core@*"
+  }
 }

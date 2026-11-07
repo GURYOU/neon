@@ -1,32 +1,26 @@
 {
-  "name": "@the-neon/pg",
-  "version": "0.2.4",
+  "name": "@guryou/neon-pg",
+  "version": "0.2.5",
+  "description": "PostgreSQL client for Neon with transaction support",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
+  "author": "Stojce Slavkovski",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/the-neon/neon.git",
+    "url": "git+https://github.com/GURYOU/neon.git",
     "directory": "packages/pg"
   },
-  "dependencies": {
-    "pg": "^8.20.0"
-  },
   "bugs": {
-    "url": "https://github.com/the-neon/neon/issues"
+    "url": "https://github.com/GURYOU/neon/issues"
   },
-  "scripts": {
-    "build": "tsc -p .",
-    "prepublishOnly": "npm run build",
-    "test": "jest --coverage"
-  },
-  "homepage": "https://github.com/the-neon/neon#readme",
-  "directories": {
-    "lib": "lib"
-  },
-  "devDependencies": {
-    "@types/pg": "^8.20.0"
-  },
+  "homepage": "https://github.com/GURYOU/neon/tree/main/packages/pg#readme",
   "keywords": [
     "neon",
     "postgresql",
@@ -35,6 +29,18 @@
     "client",
     "typescript"
   ],
-  "author": "Stojce Slavkovski",
-  "description": "PostgreSQL client for Neon with transaction support"
+  "scripts": {
+    "build": "tsc -p .",
+    "prepublishOnly": "npm run build",
+    "test": "jest --coverage"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
 }

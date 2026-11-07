@@ -1,14 +1,14 @@
-# @the-neon/validation
+# @guryou/neon-validation
 
 Method argument validation for Neon using decorators.
 
 ## Install
 
 ```bash
-npm install @the-neon/validation
+npm install @guryou/neon-validation
 ```
 
-Requires `@the-neon/core` as a peer dependency.
+Requires `@the-neon/core` as a peer dependency (alias it to `@guryou/neon-core`, see the root README).
 
 ## Usage
 
