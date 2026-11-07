@@ -22,15 +22,15 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v6
 
+      # pnpm must be on PATH before setup-node resolves `cache: pnpm`
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.29.2
+
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: pnpm
-
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.29.2
-          cache: true
 
       - name: Run tests
         run: |
