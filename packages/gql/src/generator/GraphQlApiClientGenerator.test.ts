@@ -1,4 +1,5 @@
 import { ErrorPrefix } from "@the-neon/core";
+import path from "path";
 import GraphQlApiClientGenerator from "./GraphQlApiClientGenerator";
 
 jest.mock("fs", () => ({
@@ -184,7 +185,7 @@ describe("GraphQlApiClientGenerator", () => {
 
   describe("generateFiles", () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      jest.resetAllMocks();
     });
 
     it("writes gqlClient.js when clientPath provided", () => {
@@ -244,6 +245,38 @@ describe("GraphQlApiClientGenerator", () => {
       );
 
       expect(mockFs.mkdirSync).toHaveBeenCalled();
+    });
+
+    it("skips gqlClient.js when it already exists, still writes the APIs", () => {
+      mockFs.existsSync.mockImplementation((target: string) =>
+        /gqlClient\.js$/.test(target),
+      );
+
+      GraphQlApiClientGenerator.generateFiles(
+        [
+          {
+            instance: "UserApi",
+            methodName: "listUsers",
+            params: [],
+            responseType: "JSON",
+          },
+        ],
+        [],
+        new Map(),
+        "/output",
+        "/client",
+      );
+
+      const written = mockFs.writeFileSync.mock.calls.map(
+        ([target]: [string]) => path.basename(target),
+      );
+      expect(written).not.toContain("gqlClient.js");
+      expect(written).toEqual(
+        expect.arrayContaining(["UserApi.js", "index.js"]),
+      );
+      expect(writtenFile(/index\.js$/)).toContain(
+        "export * from './gqlClient';",
+      );
     });
 
     it("skips directory creation when clientPath already exists", () => {
@@ -323,7 +356,7 @@ describe("GraphQlApiClientGenerator", () => {
   // rather than a fixed list, so it keeps holding when a key is added upstream.
   describe("emitted ErrorPrefix", () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      jest.resetAllMocks();
     });
 
     const emittedClient = () => {
@@ -374,7 +407,7 @@ describe("GraphQlApiClientGenerator", () => {
 
   describe("generated client endpoint resolution", () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      jest.resetAllMocks();
     });
 
     const generateClient = () => {
