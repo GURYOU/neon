@@ -1,12 +1,28 @@
-# @the-neon/pg
+# @guryou/neon-pg
 
 PostgreSQL client for Neon with transaction support.
 
 ## Install
 
 ```bash
-npm install @the-neon/pg
+npm install @guryou/neon-pg
 ```
+
+## Pooling
+
+One `pg.Pool` per connection string, shared by every `PostgresDB` instance with that string. Pool options: `max: 4`, `idleTimeoutMillis: 60000`, `keepAlive: true`, `connectionTimeoutMillis: 2000`.
+
+Outside a transaction every call runs on `pool.query()`, so concurrent calls on one instance never share a client. `start()` checks out one client and holds it until `commit()` or `rollback()`, which release it even when they fail.
+
+No `search_path` is set on connect. Put it in the connection string when needed:
+
+```
+postgresql://user:pass@host:5432/db?options=-c%20search_path%3Dmyschema,public
+```
+
+## Errors
+
+By default a failing query is logged with `console.error` and the call returns `undefined` (`getOne` returns `null`, `execute` returns `0`). Set `PostgresDB.throwOnError = true` to rethrow instead.
 
 ## Usage
 

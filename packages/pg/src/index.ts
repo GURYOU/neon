@@ -19,10 +19,18 @@ import { Pool, PoolClient } from "pg";
 // }
 
 class PostgresDB {
+  /**
+   * When true, query() rethrows database errors instead of logging them and
+   * returning undefined. Default false keeps the historical behaviour.
+   */
+  static throwOnError = false;
+
   transaction = false;
   _client?: PoolClient;
 
-  private static pool: Pool;
+  // One pool per connection string: a single static pool was keyed by whichever
+  // instance connected first, so a second database silently queried the first.
+  private static pools: Record<string, Pool> = {};
   private connectionString: string;
 
   //   private ctx: IAppContext;
@@ -35,22 +43,39 @@ class PostgresDB {
     // this.ctx = ctx;
   }
 
-  // TODO: identifier
+  // A transaction holds one client from start() to commit()/rollback(); the
+  // client is released even when BEGIN/COMMIT/ROLLBACK fails.
   public async start(): Promise<void> {
+    this._client = await this.getPool().connect();
     this.transaction = true;
-    await this.execute("BEGIN");
+    try {
+      await this.execute("BEGIN");
+    } catch (ex) {
+      this.endTransaction();
+      throw ex;
+    }
   }
 
-  // TODO: identifier
   public async commit(): Promise<void> {
-    this.transaction = false;
-    await this.execute("COMMIT");
+    await this.finishTransaction("COMMIT");
   }
 
-  // TODO: identifier
   public async rollback(): Promise<void> {
+    await this.finishTransaction("ROLLBACK");
+  }
+
+  private async finishTransaction(sql: "COMMIT" | "ROLLBACK"): Promise<void> {
+    try {
+      await this.execute(sql);
+    } finally {
+      this.endTransaction();
+    }
+  }
+
+  private endTransaction(): void {
     this.transaction = false;
-    await this.execute("ROLLBACK");
+    this._client?.release();
+    this._client = undefined;
   }
 
   public async queryAsJson(sql: string, args?: any[]): Promise<any | void> {
@@ -58,18 +83,20 @@ class PostgresDB {
     return this.query(final, args);
   }
 
+  // Outside a transaction each call runs on pool.query(), which checks out,
+  // uses and releases its own client, so concurrent calls on one instance
+  // never share a client. The query is awaited inside the try so errors are
+  // caught here and, in a transaction, the client is not reused mid-query.
   public async query(sql: string, args?: any[]): Promise<any | any[] | void> {
-    const db = await this.getDataStore();
+    const runner =
+      this.transaction && this._client ? this._client : this.getPool();
     try {
-      const resp = db.query(sql, args);
-      return resp;
+      return await runner.query(sql, args);
     } catch (ex) {
-      console.error("DB Exception: ", ex);
-    } finally {
-      if (db && !this.transaction && this._client) {
-        db.release();
-        this._client = undefined;
+      if (PostgresDB.throwOnError) {
+        throw ex;
       }
+      console.error("DB Exception: ", ex);
     }
   }
 
@@ -92,7 +119,11 @@ class PostgresDB {
     return this.castRow<T>(resp?.["rows"]?.[0]);
   }
 
-  public async update<T = any>(table: string, filter: any, columns: any): Promise<T> {
+  public async update<T = any>(
+    table: string,
+    filter: any,
+    columns: any,
+  ): Promise<T> {
     const sanTable = this.sanitize(table);
     // await this.authorizationCheck({ table: sanTable, columns, filter, skipAuth });
 
@@ -127,7 +158,10 @@ class PostgresDB {
     return null;
   }
 
-  public async getMany<T = any>(sql: string, args?: any[]): Promise<T[] | null> {
+  public async getMany<T = any>(
+    sql: string,
+    args?: any[],
+  ): Promise<T[] | null> {
     const model = await this.query(sql, args);
 
     if (model && model?.["rowCount"] > 0) {
@@ -288,26 +322,24 @@ class PostgresDB {
     );
   }
 
-  private async getDataStore(): Promise<PoolClient> {
-    if (!PostgresDB.pool) {
-      PostgresDB.pool = new Pool({
+  private getPool(): Pool {
+    let pool = PostgresDB.pools[this.connectionString];
+    if (!pool) {
+      // max 4: one Lambda container serves one request at a time; the pg
+      // default of 10 per container overloaded the shared cluster.
+      pool = new Pool({
         connectionString: this.connectionString,
         connectionTimeoutMillis: 2000,
+        idleTimeoutMillis: 60000,
+        keepAlive: true,
+        max: 4,
       });
-
-      PostgresDB.pool.on("error", () => {
+      pool.on("error", () => {
         return null;
       });
-      PostgresDB.pool.on("connect", (client) => {
-        client.query("SET search_path TO public");
-      });
+      PostgresDB.pools[this.connectionString] = pool;
     }
-
-    if (!this._client) {
-      this._client = await PostgresDB.pool.connect();
-    }
-
-    return this._client as PoolClient;
+    return pool;
   }
 
   private sanitize(table: string) {
